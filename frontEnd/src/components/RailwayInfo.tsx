@@ -1,157 +1,238 @@
-import React from 'react';
-import { Phone, Briefcase, RefreshCcw, Calendar, MessageSquare, ShieldAlert } from 'lucide-react';
+import React, { useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import {
+  Phone,
+  Briefcase,
+  RefreshCcw,
+  Calendar,
+  MessageSquare,
+  ShieldAlert,
+  ChevronDown,
+} from 'lucide-react';
 import { RAILWAY_GUIDELINES, TRAINS } from '../data/railway';
+import { ScrollReveal, TRANSIT_EASE } from './MotionPrimitives';
 
 interface RailwayInfoProps {
   isBengali: boolean;
 }
 
 export const RailwayInfo: React.FC<RailwayInfoProps> = ({ isBengali }) => {
+  const [openOffDays, setOpenOffDays] = useState(true);
+  const [openRefunds, setOpenRefunds] = useState(true);
+
   return (
     <div className="space-y-4">
-      {/* 4-Column High-Utility Railway Operational Dashboard */}
+      {/* 4-Column High-Utility Railway Operational Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {/* Helpline Card */}
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-4 shadow-sm">
-          <div className="flex items-center gap-2 mb-2 text-emerald-600 dark:text-emerald-400">
-            <Phone className="w-4 h-4" />
-            <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-zinc-100">
-              {isBengali ? 'জরুরি হেল্পলাইন' : 'Helpline & Support'}
-            </h3>
-          </div>
-          <div className="space-y-1.5 font-mono text-xs tabular-nums">
-            <div className="flex items-center justify-between">
-              <span className="text-zinc-500">BR Hotline:</span>
-              <span className="font-bold text-zinc-900 dark:text-zinc-100 bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">
-                131
-              </span>
+        <ScrollReveal delay={0}>
+          <div className="h-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-2.5 text-emerald-600 dark:text-emerald-400">
+              <Phone className="w-4 h-4 shrink-0" />
+              <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-zinc-100">
+                {isBengali ? 'জরুরি হেল্পলাইন' : 'Helpline & Support'}
+              </h3>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-zinc-500">Customer Care:</span>
-              <span className="font-bold text-zinc-900 dark:text-zinc-100">
-                16122
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-zinc-500">Railway Police:</span>
-              <span className="font-bold text-zinc-900 dark:text-zinc-100">
-                999
-              </span>
+            <div className="space-y-2 font-mono text-xs tabular-nums">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-zinc-600 dark:text-zinc-400">BR Hotline:</span>
+                <span className="font-bold text-zinc-900 dark:text-zinc-100 bg-slate-100 dark:bg-zinc-800 px-2 py-0.5 rounded">
+                  131
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-zinc-600 dark:text-zinc-400">Customer Care:</span>
+                <span className="font-bold text-zinc-900 dark:text-zinc-100">16122</span>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-zinc-600 dark:text-zinc-400">Railway Police:</span>
+                <span className="font-bold text-zinc-900 dark:text-zinc-100">999</span>
+              </div>
             </div>
           </div>
-        </div>
+        </ScrollReveal>
 
         {/* SMS Live Tracker Card */}
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-4 shadow-sm">
-          <div className="flex items-center gap-2 mb-2 text-emerald-600 dark:text-emerald-400">
-            <MessageSquare className="w-4 h-4" />
-            <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-zinc-100">
-              {isBengali ? 'এসএমএস ট্র্যাকিং' : 'SMS Train Tracker'}
-            </h3>
-          </div>
-          <div className="text-xs text-zinc-600 dark:text-zinc-300 space-y-1">
-            <p className="text-[11px] text-zinc-500">Track location without mobile internet:</p>
-            <div className="p-1.5 rounded bg-zinc-100 dark:bg-zinc-950 font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400 border border-zinc-200 dark:border-zinc-800">
-              TR &lt;Train_No&gt; to 9999
+        <ScrollReveal delay={0.05}>
+          <div className="h-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-2.5 text-emerald-600 dark:text-emerald-400">
+              <MessageSquare className="w-4 h-4 shrink-0" />
+              <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-zinc-100">
+                {isBengali ? 'এসএমএস ট্র্যাকিং' : 'SMS Train Tracker'}
+              </h3>
             </div>
-            <p className="text-[10px] text-zinc-400">E.g., "TR 753" for Silk City Express</p>
+            <div className="text-xs text-zinc-700 dark:text-zinc-300 space-y-2">
+              <p className="text-[11px] text-zinc-600 dark:text-zinc-400">
+                Track train position without mobile data:
+              </p>
+              <div className="p-2 rounded-md bg-slate-100 dark:bg-zinc-950 font-mono text-xs font-bold text-emerald-700 dark:text-emerald-400 border border-zinc-200 dark:border-zinc-800">
+                TR &lt;Train_No&gt; to 9999
+              </div>
+              <p className="text-[11px] text-zinc-600 dark:text-zinc-400 font-mono">
+                Example: TR 753
+              </p>
+            </div>
           </div>
-        </div>
+        </ScrollReveal>
 
         {/* Luggage Allowance Card */}
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-4 shadow-sm">
-          <div className="flex items-center gap-2 mb-2 text-emerald-600 dark:text-emerald-400">
-            <Briefcase className="w-4 h-4" />
-            <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-zinc-100">
-              {isBengali ? 'লাগেজ ব্যাগেজ নিয়ম' : 'Free Luggage Limits'}
-            </h3>
+        <ScrollReveal delay={0.1}>
+          <div className="h-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-2.5 text-emerald-600 dark:text-emerald-400">
+              <Briefcase className="w-4 h-4 shrink-0" />
+              <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-zinc-100">
+                {isBengali ? 'লাগেজ ব্যাগেজ নিয়ম' : 'Free Luggage Limits'}
+              </h3>
+            </div>
+            <div className="space-y-2 font-mono text-xs tabular-nums text-zinc-800 dark:text-zinc-200">
+              {RAILWAY_GUIDELINES.luggageRules.map((r, i) => (
+                <div key={i} className="flex items-center justify-between gap-2 text-[11px]">
+                  <span className="text-zinc-600 dark:text-zinc-400">{r.class.split(' ')[0]}:</span>
+                  <span className="font-semibold">{r.limit.split(' ')[0]} kg</span>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="space-y-1.5 font-mono text-xs tabular-nums text-zinc-700 dark:text-zinc-300">
-            {RAILWAY_GUIDELINES.luggageRules.map((r, i) => (
-              <div key={i} className="flex items-center justify-between text-[11px]">
-                <span className="text-zinc-500">{r.class.split(' ')[0]}:</span>
-                <span className="font-semibold">{r.limit.split(' ')[0]} kg</span>
-              </div>
-            ))}
-          </div>
-        </div>
+        </ScrollReveal>
 
         {/* BR Server Gateway Status */}
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-4 shadow-sm">
-          <div className="flex items-center gap-2 mb-2 text-emerald-600 dark:text-emerald-400">
-            <ShieldAlert className="w-4 h-4" />
-            <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-zinc-100">
-              {isBengali ? 'গেটওয়ে কার্যক্ষমতা' : 'Telemetry Gateway'}
-            </h3>
+        <ScrollReveal delay={0.15}>
+          <div className="h-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-2.5 text-emerald-600 dark:text-emerald-400">
+              <ShieldAlert className="w-4 h-4 shrink-0" />
+              <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-zinc-100">
+                {isBengali ? 'গেটওয়ে কার্যক্ষমতা' : 'Telemetry Gateway'}
+              </h3>
+            </div>
+            <div className="space-y-2 font-mono text-xs tabular-nums text-zinc-800 dark:text-zinc-200">
+              <div className="flex items-center justify-between gap-2 text-[11px]">
+                <span className="text-zinc-600 dark:text-zinc-400">Latency:</span>
+                <span className="text-emerald-700 dark:text-emerald-400 font-bold">38 ms</span>
+              </div>
+              <div className="flex items-center justify-between gap-2 text-[11px]">
+                <span className="text-zinc-600 dark:text-zinc-400">Active Rakes:</span>
+                <span>104 Intercity</span>
+              </div>
+              <div className="flex items-center justify-between gap-2 text-[11px]">
+                <span className="text-zinc-600 dark:text-zinc-400">Sync Source:</span>
+                <span>BR Timetable</span>
+              </div>
+            </div>
           </div>
-          <div className="space-y-1 font-mono text-xs tabular-nums text-zinc-700 dark:text-zinc-300">
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="text-zinc-500">Latency:</span>
-              <span className="text-emerald-600 dark:text-emerald-400 font-bold">38 ms</span>
-            </div>
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="text-zinc-500">Active Rakes:</span>
-              <span>104 Intercity</span>
-            </div>
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="text-zinc-500">Sync:</span>
-              <span className="text-[10px] text-zinc-400">Real-time BR API</span>
-            </div>
-          </div>
-        </div>
+        </ScrollReveal>
       </div>
 
-      {/* Structured 2-Column: Off-Day Matrix & Official Cancellation Surcharges */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Off-Day Directory */}
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-4 sm:p-5 shadow-sm space-y-3">
-          <div className="flex items-center gap-2 pb-2 border-b border-zinc-100 dark:border-zinc-800">
-            <Calendar className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-            <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-zinc-100">
-              {isBengali ? 'আন্তঃনগর ট্রেনের সাপ্তাহিক ছুটির দিন' : 'Intercity Weekly Maintenance Off-Days'}
-            </h3>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 font-mono text-xs tabular-nums">
-            {TRAINS.map((train) => (
-              <div
-                key={train.trainNumber}
-                className="p-2 rounded bg-zinc-50 dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800"
-              >
-                <div className="font-bold text-zinc-900 dark:text-zinc-100">
-                  #{train.trainNumber} {train.trainName.split(' ')[0]}
-                </div>
-                <div className="text-[11px] text-rose-600 dark:text-rose-400 font-semibold mt-0.5">
-                  {train.offDays.join(', ')}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+      {/* Structured 2-Column Animated Disclosures: Off-Days & Cancellation Rules */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+        {/* Off-Day Directory Accordion */}
+        <ScrollReveal delay={0.06}>
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-4 sm:p-5">
+            <button
+              type="button"
+              onClick={() => setOpenOffDays(!openOffDays)}
+              aria-expanded={openOffDays}
+              className="w-full flex items-center justify-between gap-2 text-left rounded-md py-1 transition-colors"
+            >
+              <span className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-zinc-100">
+                  {isBengali
+                    ? 'আন্তঃনগর ট্রেনের সাপ্তাহিক ছুটির দিন'
+                    : 'Intercity Weekly Maintenance Off-Days'}
+                </span>
+              </span>
+              <ChevronDown
+                className={`w-4 h-4 text-zinc-500 dark:text-zinc-400 shrink-0 transition-transform duration-200 ${
+                  openOffDays ? 'rotate-180' : ''
+                }`}
+              />
+            </button>
 
-        {/* Cancellation Deductions */}
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-4 sm:p-5 shadow-sm space-y-3">
-          <div className="flex items-center gap-2 pb-2 border-b border-zinc-100 dark:border-zinc-800">
-            <RefreshCcw className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-            <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-zinc-100">
-              {isBengali ? 'টিকেট বাতিল ও রিফান্ড নীতি' : 'Official BR Ticket Refund & Cancellation Deductions'}
-            </h3>
+            <AnimatePresence initial={false}>
+              {openOffDays && (
+                <motion.div
+                  key="offdays-body"
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.24, ease: TRANSIT_EASE }}
+                  className="overflow-hidden"
+                >
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 font-mono text-xs tabular-nums pt-3 mt-3 border-t border-zinc-200 dark:border-zinc-800">
+                    {TRAINS.map((train) => (
+                      <div
+                        key={train.trainNumber}
+                        className="p-2 rounded-md bg-slate-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 min-w-0"
+                      >
+                        <div className="font-bold text-zinc-900 dark:text-zinc-100 truncate">
+                          #{train.trainNumber} {train.trainName.split(' ')[0]}
+                        </div>
+                        <div className="text-[11px] text-rose-700 dark:text-rose-400 font-semibold mt-0.5 truncate">
+                          {train.offDays.join(', ')}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
-          <div className="space-y-2">
-            {RAILWAY_GUIDELINES.cancellationRules.map((rule, idx) => (
-              <div
-                key={idx}
-                className="p-2.5 rounded bg-zinc-50 dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800 flex items-start justify-between gap-3 text-xs"
-              >
-                <div className="font-medium text-zinc-800 dark:text-zinc-200">
-                  {rule.timeframe}
-                </div>
-                <div className="font-mono text-right font-bold text-rose-600 dark:text-rose-400 shrink-0 tabular-nums">
-                  {rule.deduction}
-                </div>
-              </div>
-            ))}
+        </ScrollReveal>
+
+        {/* Cancellation Deductions Accordion */}
+        <ScrollReveal delay={0.12}>
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-4 sm:p-5">
+            <button
+              type="button"
+              onClick={() => setOpenRefunds(!openRefunds)}
+              aria-expanded={openRefunds}
+              className="w-full flex items-center justify-between gap-2 text-left rounded-md py-1 transition-colors"
+            >
+              <span className="flex items-center gap-2">
+                <RefreshCcw className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-zinc-100">
+                  {isBengali
+                    ? 'টিকেট বাতিল ও রিফান্ড নীতি'
+                    : 'Official BR Ticket Refund & Cancellation Rules'}
+                </span>
+              </span>
+              <ChevronDown
+                className={`w-4 h-4 text-zinc-500 dark:text-zinc-400 shrink-0 transition-transform duration-200 ${
+                  openRefunds ? 'rotate-180' : ''
+                }`}
+              />
+            </button>
+
+            <AnimatePresence initial={false}>
+              {openRefunds && (
+                <motion.div
+                  key="refunds-body"
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.24, ease: TRANSIT_EASE }}
+                  className="overflow-hidden"
+                >
+                  <div className="space-y-2 pt-3 mt-3 border-t border-zinc-200 dark:border-zinc-800">
+                    {RAILWAY_GUIDELINES.cancellationRules.map((rule, idx) => (
+                      <div
+                        key={idx}
+                        className="p-2.5 rounded-md bg-slate-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-3 text-xs"
+                      >
+                        <div className="font-medium text-zinc-800 dark:text-zinc-200">
+                          {rule.timeframe}
+                        </div>
+                        <div className="font-mono sm:text-right font-bold text-rose-700 dark:text-rose-400 tabular-nums">
+                          {rule.deduction}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
-        </div>
+        </ScrollReveal>
       </div>
     </div>
   );

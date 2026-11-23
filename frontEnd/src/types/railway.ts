@@ -4,6 +4,8 @@ export interface Station {
   code: string;
   name: string;
   nameBn: string;
+  shortName?: string;
+  shortNameBn?: string;
   division: 'DHAKA' | 'CHATTOGRAM' | 'RAJSHAHI' | 'SYLHET' | 'KHULNA' | 'RANGPUR' | 'MYMENSINGH';
   hub: boolean;
   platforms?: number;

@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowLeftRight, Compass, TrainTrack } from 'lucide-react';
 import { StationSelector } from './StationSelector';
 import { TRAINS } from '../data/railway';
 import { SeatClass } from '../types/railway';
+import { TAB_SPRING, TRANSIT_EASE } from './MotionPrimitives';
 
 interface WorkstationControlsProps {
   mode: 'JOURNEY' | 'TRACKER';
@@ -19,7 +21,6 @@ interface WorkstationControlsProps {
   setSelectedTrainNumber: (trainNum: string) => void;
   onSwapStations: () => void;
   isBengali: boolean;
-  onResetSearch: () => void;
 }
 
 const CLASS_OPTIONS: { id: SeatClass | 'ALL'; label: string; labelBn: string }[] = [
@@ -32,13 +33,13 @@ const CLASS_OPTIONS: { id: SeatClass | 'ALL'; label: string; labelBn: string }[]
 ];
 
 const POPULAR_TRAINS = [
-  { number: '702', name: 'Subarna (702)' },
-  { number: '787', name: 'Sonar Bangla (787)' },
-  { number: '753', name: 'Silk City (753)' },
-  { number: '759', name: 'Padma (759)' },
-  { number: '709', name: 'Parabat (709)' },
-  { number: '726', name: 'Sundarban (726)' },
-  { number: '771', name: 'Rangpur (771)' },
+  { number: '702', name: 'Subarna [702]' },
+  { number: '787', name: 'Sonar Bangla [787]' },
+  { number: '753', name: 'Silk City [753]' },
+  { number: '759', name: 'Padma [759]' },
+  { number: '709', name: 'Parabat [709]' },
+  { number: '726', name: 'Sundarban [726]' },
+  { number: '771', name: 'Rangpur [771]' },
 ];
 
 export const WorkstationControls: React.FC<WorkstationControlsProps> = ({
@@ -57,12 +58,11 @@ export const WorkstationControls: React.FC<WorkstationControlsProps> = ({
   onSwapStations,
   isBengali,
 }) => {
-  const [isRotating, setIsRotating] = React.useState(false);
+  const [swapCount, setSwapCount] = useState(0);
 
   const handleSwap = () => {
-    setIsRotating(true);
+    setSwapCount((c) => c + 1);
     onSwapStations();
-    setTimeout(() => setIsRotating(false), 300);
   };
 
   const handleDateOffset = (days: number) => {
@@ -75,191 +75,251 @@ export const WorkstationControls: React.FC<WorkstationControlsProps> = ({
   };
 
   return (
-    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-4 sm:p-5 shadow-sm">
-      {/* Mode Switcher Tabs */}
-      <div className="flex items-center gap-1.5 p-1 bg-zinc-100 dark:bg-zinc-950 rounded-md border border-zinc-200 dark:border-zinc-800 mb-4">
+    <section
+      aria-label="Transit Search and Tracker Controls"
+      className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-4 sm:p-5 transition-colors duration-200"
+    >
+      {/* Mode Switcher Tabs with Shared-Element Active Indicator */}
+      <div
+        role="tablist"
+        aria-label="Workstation Mode"
+        className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 p-1 bg-slate-100 dark:bg-zinc-950 rounded-md border border-zinc-200 dark:border-zinc-800 mb-4"
+      >
         <button
           type="button"
+          role="tab"
+          aria-selected={mode === 'JOURNEY'}
           onClick={() => setMode('JOURNEY')}
-          className={`flex-1 py-2 px-3 rounded text-xs font-semibold flex items-center justify-center gap-2 transition-all active:scale-[0.98] ${
+          className={`relative min-h-[44px] sm:min-h-[38px] py-2 px-3 rounded-md text-xs font-semibold flex items-center justify-center gap-2 transition-colors duration-200 active:scale-[0.98] ${
             mode === 'JOURNEY'
-              ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm border border-zinc-200/80 dark:border-zinc-700'
+              ? 'text-zinc-900 dark:text-zinc-100'
               : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
           }`}
         >
-          <Compass className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-          <span>{isBengali ? 'মোড ১: যাত্রা ও ট্রেনের সময়সূচী' : 'Mode A: Journey & Train Search'}</span>
+          {mode === 'JOURNEY' && (
+            <motion.span
+              layoutId="workstation-mode-pill"
+              transition={TAB_SPRING}
+              className="absolute inset-0 rounded-md bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-xs"
+            />
+          )}
+          <Compass className="w-4 h-4 text-emerald-600 dark:text-emerald-400 relative z-10 shrink-0" />
+          <span className="relative z-10">
+            {isBengali ? 'মোড ১: যাত্রা ও ট্রেনের সময়সূচী' : 'Mode A: Journey & Train Search'}
+          </span>
         </button>
 
         <button
           type="button"
+          role="tab"
+          aria-selected={mode === 'TRACKER'}
           onClick={() => setMode('TRACKER')}
-          className={`flex-1 py-2 px-3 rounded text-xs font-semibold flex items-center justify-center gap-2 transition-all active:scale-[0.98] ${
+          className={`relative min-h-[44px] sm:min-h-[38px] py-2 px-3 rounded-md text-xs font-semibold flex items-center justify-center gap-2 transition-colors duration-200 active:scale-[0.98] ${
             mode === 'TRACKER'
-              ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm border border-zinc-200/80 dark:border-zinc-700'
+              ? 'text-zinc-900 dark:text-zinc-100'
               : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
           }`}
         >
-          <TrainTrack className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-          <span>{isBengali ? 'মোড ২: রুট ও সরাসরি ট্র্যাকার' : 'Mode B: Train Route & Live Tracker'}</span>
+          {mode === 'TRACKER' && (
+            <motion.span
+              layoutId="workstation-mode-pill"
+              transition={TAB_SPRING}
+              className="absolute inset-0 rounded-md bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-xs"
+            />
+          )}
+          <TrainTrack className="w-4 h-4 text-emerald-600 dark:text-emerald-400 relative z-10 shrink-0" />
+          <span className="relative z-10">
+            {isBengali ? 'মোড ২: রুট ও সরাসরি ট্র্যাকার' : 'Mode B: Train Route & Live Tracker'}
+          </span>
         </button>
       </div>
 
-      {mode === 'JOURNEY' ? (
-        /* MODE A: JOURNEY SEARCH */
-        <div className="space-y-4">
-          {/* Station Selection Grid with 1-click Fast Swap */}
-          <div className="flex flex-col md:flex-row items-stretch md:items-end gap-2.5">
-            <StationSelector
-              label="Origin Station"
-              labelBn="যাত্রা শুরুর স্টেশন"
-              selectedStationCode={fromStationCode}
-              onSelectStation={setFromStationCode}
-              excludeCode={toStationCode}
-              isBengali={isBengali}
-            />
+      {/* Animated Mode Panel Content */}
+      <AnimatePresence mode="wait">
+        {mode === 'JOURNEY' ? (
+          <motion.div
+            key="mode-journey"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.22, ease: TRANSIT_EASE }}
+            className="space-y-4"
+          >
+            {/* Station Selection Grid with 1-click Fast Swap */}
+            <div className="flex flex-col md:flex-row items-stretch md:items-start gap-3">
+              <StationSelector
+                label="Origin Station"
+                labelBn="যাত্রা শুরুর স্টেশন"
+                selectedStationCode={fromStationCode}
+                onSelectStation={setFromStationCode}
+                excludeCode={toStationCode}
+                isBengali={isBengali}
+              />
 
-            {/* Fast 1-click Swap Button with 180 deg rotation feedback */}
-            <div className="flex justify-center md:pb-6">
-              <button
-                type="button"
-                onClick={handleSwap}
-                aria-label="Swap Origin and Destination"
-                title="Swap Origin and Destination / স্টেশন অদলবদল"
-                className="h-11 w-11 rounded-md border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-center text-zinc-700 dark:text-zinc-300 transition-all active:scale-[0.96] focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-              >
-                <ArrowLeftRight
-                  className={`w-4 h-4 transition-transform duration-300 ${
-                    isRotating ? 'rotate-180 scale-110 text-emerald-600' : ''
-                  }`}
-                />
-              </button>
+              {/* Fast 1-click Swap Button with smooth 180 deg rotation */}
+              <div className="flex justify-center md:pt-[22px]">
+                <button
+                  type="button"
+                  onClick={handleSwap}
+                  aria-label="Swap Origin and Destination"
+                  title="Swap Origin and Destination / স্টেশন অদলবদল"
+                  className="h-11 w-11 rounded-md border border-zinc-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-950 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:border-emerald-500 flex items-center justify-center text-zinc-700 dark:text-zinc-200 transition-colors duration-200 active:scale-[0.96]"
+                >
+                  <motion.span
+                    animate={{ rotate: swapCount * 180 }}
+                    transition={{ duration: 0.28, ease: TRANSIT_EASE }}
+                    className="inline-flex"
+                  >
+                    <ArrowLeftRight className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  </motion.span>
+                </button>
+              </div>
+
+              <StationSelector
+                label="Destination Station"
+                labelBn="গন্তব্য স্টেশন"
+                selectedStationCode={toStationCode}
+                onSelectStation={setToStationCode}
+                excludeCode={fromStationCode}
+                isBengali={isBengali}
+              />
             </div>
 
-            <StationSelector
-              label="Destination Station"
-              labelBn="গন্তব্য স্টেশন"
-              selectedStationCode={toStationCode}
-              onSelectStation={setToStationCode}
-              excludeCode={fromStationCode}
-              isBengali={isBengali}
-            />
-          </div>
-
-          {/* Secondary Controls: Date Picker & Class Filter */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-2 border-t border-zinc-100 dark:border-zinc-800/80">
-            {/* Travel Date */}
-            <div>
-              <label className="block text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-                <span>{isBengali ? 'যাত্রার তারিখ' : 'Travel Date'}</span>
-                <span className="text-[10px] text-zinc-400 font-normal">Next 10 days</span>
-              </label>
-              <div className="relative">
+            {/* Secondary Controls: Date Picker & Class Filter */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 pt-3 border-t border-zinc-200 dark:border-zinc-800">
+              {/* Travel Date */}
+              <div className="md:col-span-4">
+                <label
+                  htmlFor="nrl-travel-date"
+                  className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider mb-1.5 flex items-center justify-between"
+                >
+                  <span>{isBengali ? 'যাত্রার তারিখ' : 'Travel Date'}</span>
+                  <span className="text-[11px] text-zinc-500 dark:text-zinc-400 font-normal normal-case">
+                    Advance 10d
+                  </span>
+                </label>
                 <input
+                  id="nrl-travel-date"
                   type="date"
                   value={travelDate}
                   onChange={(e) => setTravelDate(e.target.value)}
-                  className="w-full h-10 px-3 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-md text-xs font-mono tabular-nums text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                  className="w-full min-h-[44px] md:min-h-[40px] px-3 bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-md text-xs font-mono tabular-nums text-zinc-900 dark:text-zinc-100"
                 />
+                {/* Quick Date offsets */}
+                <div className="flex items-center gap-1.5 mt-2">
+                  {[
+                    { days: 0, en: 'Today', bn: 'আজ' },
+                    { days: 1, en: '+1 Day', bn: '+১ দিন' },
+                    { days: 2, en: '+2 Days', bn: '+২ দিন' },
+                  ].map((item) => (
+                    <button
+                      key={item.days}
+                      type="button"
+                      onClick={() => handleDateOffset(item.days)}
+                      className="text-[11px] px-2.5 py-1 rounded-md bg-slate-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 transition-colors active:scale-[0.98]"
+                    >
+                      {isBengali ? item.bn : item.en}
+                    </button>
+                  ))}
+                </div>
               </div>
-              {/* Quick Date offsets */}
-              <div className="flex items-center gap-1.5 mt-1.5">
-                <button
-                  type="button"
-                  onClick={() => handleDateOffset(0)}
-                  className="text-[10px] px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 active:scale-[0.97]"
-                >
-                  {isBengali ? 'আজ' : 'Today'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleDateOffset(1)}
-                  className="text-[10px] px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 active:scale-[0.97]"
-                >
-                  {isBengali ? '+১ দিন' : '+1 Day'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleDateOffset(2)}
-                  className="text-[10px] px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 active:scale-[0.97]"
-                >
-                  {isBengali ? '+২ দিন' : '+2 Days'}
-                </button>
+
+              {/* Travel Class Selector */}
+              <div className="md:col-span-8">
+                <span className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider mb-1.5">
+                  {isBengali ? 'শ্রেণি নির্বাচন' : 'Travel Class Filter'}
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {CLASS_OPTIONS.map((opt) => {
+                    const isSelected = selectedClass === opt.id;
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => setSelectedClass(opt.id)}
+                        aria-pressed={isSelected}
+                        className={`relative min-h-[40px] px-3 rounded-md text-xs font-medium transition-colors duration-200 active:scale-[0.98] ${
+                          isSelected
+                            ? 'text-white'
+                            : 'bg-slate-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 hover:border-emerald-500'
+                        }`}
+                      >
+                        {isSelected && (
+                          <motion.span
+                            layoutId="class-filter-pill"
+                            transition={TAB_SPRING}
+                            className="absolute inset-0 rounded-md bg-emerald-600"
+                          />
+                        )}
+                        <span className="relative z-10">
+                          {isBengali ? opt.labelBn : opt.label}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
-
-            {/* Travel Class Selector */}
-            <div className="sm:col-span-2">
-              <label className="block text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1.5">
-                {isBengali ? 'শ্রেণি নির্বাচন' : 'Travel Class Filter'}
+          </motion.div>
+        ) : (
+          /* MODE B: DIRECT TRAIN ROUTE & LIVE TRACKER */
+          <motion.div
+            key="mode-tracker"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.22, ease: TRANSIT_EASE }}
+            className="space-y-4"
+          >
+            <div>
+              <label
+                htmlFor="nrl-train-select"
+                className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider mb-1.5"
+              >
+                {isBengali ? 'ট্রেন নম্বর অথবা নাম নির্বাচন করুন' : 'Select Train Number / Name'}
               </label>
-              <div className="flex flex-wrap gap-1.5">
-                {CLASS_OPTIONS.map((opt) => {
-                  const isSelected = selectedClass === opt.id;
+              <select
+                id="nrl-train-select"
+                value={selectedTrainNumber}
+                onChange={(e) => setSelectedTrainNumber(e.target.value)}
+                className="w-full min-h-[44px] px-3 bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-md text-xs sm:text-sm font-medium text-zinc-900 dark:text-zinc-100"
+              >
+                {TRAINS.map((t) => (
+                  <option key={t.trainNumber} value={t.trainNumber}>
+                    [{t.trainNumber}] {t.trainName} ({t.trainNameBn}) — {t.originStationCode} →{' '}
+                    {t.destinationStationCode} ({t.departureTime})
+                  </option>
+                ))}
+              </select>
+
+              {/* Quick Train Chips */}
+              <div className="flex flex-wrap items-center gap-1.5 mt-3">
+                <span className="text-[11px] uppercase font-semibold text-zinc-500 dark:text-zinc-400">
+                  {isBengali ? 'জনপ্রিয়:' : 'Popular:'}
+                </span>
+                {POPULAR_TRAINS.map((train) => {
+                  const isSelected = selectedTrainNumber === train.number;
                   return (
                     <button
-                      key={opt.id}
+                      key={train.number}
                       type="button"
-                      onClick={() => setSelectedClass(opt.id)}
-                      className={`h-9 px-3 rounded-md text-xs font-medium transition-all active:scale-[0.98] ${
+                      onClick={() => setSelectedTrainNumber(train.number)}
+                      aria-pressed={isSelected}
+                      className={`text-xs px-2.5 py-1.5 rounded-md font-mono tabular-nums transition-colors duration-200 active:scale-[0.98] ${
                         isSelected
-                          ? 'bg-emerald-600 text-white shadow-sm'
-                          : 'bg-zinc-100 dark:bg-zinc-800/90 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 hover:border-emerald-500'
+                          ? 'bg-emerald-600 text-white font-semibold border border-emerald-600'
+                          : 'bg-slate-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 hover:border-emerald-500'
                       }`}
                     >
-                      {isBengali ? opt.labelBn : opt.label}
+                      {train.name}
                     </button>
                   );
                 })}
               </div>
             </div>
-          </div>
-        </div>
-      ) : (
-        /* MODE B: DIRECT TRAIN ROUTE & LIVE TRACKER */
-        <div className="space-y-4">
-          <div>
-            <label className="block text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1.5">
-              {isBengali ? 'ট্রেন নম্বর অথবা নাম নির্বাচন করুন' : 'Select Train Number / Name'}
-            </label>
-            <div className="relative">
-              <select
-                value={selectedTrainNumber}
-                onChange={(e) => setSelectedTrainNumber(e.target.value)}
-                className="w-full h-11 px-3 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-md text-xs sm:text-sm font-medium text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-              >
-                {TRAINS.map((t) => (
-                  <option key={t.trainNumber} value={t.trainNumber}>
-                    [{t.trainNumber}] {t.trainName} ({t.trainNameBn}) — {t.originStationCode} ➔ {t.destinationStationCode} ({t.departureTime})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Quick Train Chips */}
-            <div className="flex flex-wrap items-center gap-1.5 mt-2.5">
-              <span className="text-[10px] uppercase font-semibold text-zinc-400 dark:text-zinc-500">Popular:</span>
-              {POPULAR_TRAINS.map((train) => {
-                const isSelected = selectedTrainNumber === train.number;
-                return (
-                  <button
-                    key={train.number}
-                    type="button"
-                    onClick={() => setSelectedTrainNumber(train.number)}
-                    className={`text-xs px-2.5 py-1 rounded-md transition-all active:scale-[0.97] ${
-                      isSelected
-                        ? 'bg-emerald-600 text-white font-mono font-medium'
-                        : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 hover:border-zinc-400'
-                    }`}
-                  >
-                    {train.name}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </section>
   );
 };

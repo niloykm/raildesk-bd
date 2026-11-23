@@ -3,13 +3,30 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23059669' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='4' y='3' width='16' height='16' rx='2'/><path d='M4 11h16'/><path d='M12 3v8'/><path d='m8 19-2 3'/><path d='m18 22-2-3'/><circle cx='8' cy='15' r='1'/><circle cx='16' cy='15' r='1'/></svg>" />
+    <link rel="manifest" href="/manifest.json" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
     <meta name="theme-color" content="#09090b" />
     <meta name="description" content="NRL - Bangladesh Railway Live Journey Tracker, Route Schedules, Stoppage Timetable, Station Stepper and Fare Matrix." />
-    <title>NRL | Bangladesh Railway Journey Intelligence & Timetable Workstation</title>
+    <title>NRL | Bangladesh Railway Journey Intelligence &amp; Timetable Workstation</title>
+    <script>
+      try {
+        var savedTheme = localStorage.getItem('nrl-theme');
+        if (savedTheme === 'light') {
+          document.documentElement.classList.remove('dark');
+        } else {
+          document.documentElement.classList.add('dark');
+        }
+      } catch (e) {}
+    </script>
   </head>
-  <body class="bg-zinc-950 text-zinc-100 min-h-screen antialiased selection:bg-emerald-600 selection:text-white">
+  <body class="bg-slate-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 min-h-screen antialiased selection:bg-emerald-600 selection:text-white transition-colors duration-200">
     <div id="root"></div>
+    <noscript>
+      <div style="padding:24px;font-family:system-ui,sans-serif;max-width:640px;margin:40px auto;border:1px solid #d4d4d8;border-radius:8px;">
+        <h1 style="font-size:18px;font-weight:700;margin:0 0 8px;">NRL — Bangladesh Railway Journey Intelligence</h1>
+        <p style="font-size:14px;margin:0;">JavaScript is required to run the interactive timetable, live train stepper, and fare calculator. Please enable JavaScript and reload.</p>
+      </div>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

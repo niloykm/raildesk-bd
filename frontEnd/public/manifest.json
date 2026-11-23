@@ -1,6 +1,6 @@
 {
-  "short_name": "NewRL",
-  "name": "NewRL URL Shortener",
+  "short_name": "NRL",
+  "name": "NRL — Bangladesh Railway Journey Intelligence",
   "icons": [
     {
       "src": "favicon.png",
@@ -10,8 +10,8 @@
     }
   ],
   "start_url": "/",
-  "background_color": "#0f172a",
-  "theme_color": "#38bdf8",
+  "background_color": "#09090b",
+  "theme_color": "#059669",
   "display": "standalone",
   "orientation": "portrait"
 }
