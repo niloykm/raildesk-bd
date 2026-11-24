@@ -27,7 +27,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    console.error('NRL ErrorBoundary caught an error:', error, errorInfo);
+    console.error('RailDesk BD ErrorBoundary caught an error:', error, errorInfo);
   }
 
   handleRetry = (): void => {
@@ -61,7 +61,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               </div>
               <div className="min-w-0">
                 <h1 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
-                  NRL Workstation Recovery
+                  RailDesk BD Workstation Recovery
                 </h1>
                 <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1 leading-relaxed">
                   A component failed to render. Your schedule data is safe — retry below or reset cached assets to restore the application cleanly.

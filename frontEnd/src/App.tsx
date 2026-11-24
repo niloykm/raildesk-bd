@@ -13,8 +13,17 @@ import {
   TAB_SPRING,
   TRANSIT_EASE,
 } from './components/MotionPrimitives';
-import { TRAINS, TRANSIT_CORRIDORS } from './data/railway';
-import { SeatClass, TransitCorridor } from './types/railway';
+import {
+  TRAINS,
+  TRANSIT_CORRIDORS,
+  DATASET_METADATA,
+  computeRouteSegment,
+  formatDuration,
+  getBangladeshTimeNow,
+  getWeekdayName,
+  isTrainOperatingOnDate,
+} from './data/railway';
+import { BookingChannel, SeatClass, TransitCorridor } from './types/railway';
 import { TrainTrack, MapPin, Calculator, Ticket, Info } from 'lucide-react';
 
 type InspectorTab = 'TIMELINE' | 'FARE' | 'TICKET';
@@ -33,7 +42,8 @@ function parseRouteState(pathname: string): {
 
 function getInitialDarkMode(): boolean {
   try {
-    const saved = localStorage.getItem('nrl-theme');
+    const saved =
+      localStorage.getItem('raildesk-theme') || localStorage.getItem('nrl-theme');
     if (saved === 'light') return false;
     return true;
   } catch {
@@ -54,7 +64,7 @@ export const App: React.FC = () => {
       root.classList.remove('dark');
     }
     try {
-      localStorage.setItem('nrl-theme', darkMode ? 'dark' : 'light');
+      localStorage.setItem('raildesk-theme', darkMode ? 'dark' : 'light');
     } catch {
       // Ignore storage write errors in restricted browsing modes
     }
@@ -117,17 +127,14 @@ export const App: React.FC = () => {
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
 
-  // Search parameters
+  // Search, Fare & Filter State
   const [fromStationCode, setFromStationCode] = useState<string>('DA');
   const [toStationCode, setToStationCode] = useState<string>('RJ');
-  const [travelDate, setTravelDate] = useState<string>(() => {
-    const today = new Date();
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, '0');
-    const dd = String(today.getDate()).padStart(2, '0');
-    return `${yyyy}-${mm}-${dd}`;
-  });
+  const [travelDate, setTravelDate] = useState<string>(() => getBangladeshTimeNow().isoDate);
   const [selectedClass, setSelectedClass] = useState<SeatClass | 'ALL'>('ALL');
+  const [hideOffDayTrains, setHideOffDayTrains] = useState<boolean>(false);
+  const [bookingChannel, setBookingChannel] = useState<BookingChannel>('ONLINE');
+  const [passengers, setPassengers] = useState<number>(1);
   const [activeCorridorId, setActiveCorridorId] = useState<string>('corridor-dhk-raj');
   const [selectedTrainNumber, setSelectedTrainNumber] = useState<string>('753');
 
@@ -143,19 +150,26 @@ export const App: React.FC = () => {
       if (selectedClass !== 'ALL' && !train.availableClasses.includes(selectedClass)) {
         return false;
       }
+
+      if (hideOffDayTrains && !isTrainOperatingOnDate(train, travelDate)) {
+        return false;
+      }
+
       return true;
     });
-  }, [fromStationCode, toStationCode, selectedClass]);
+  }, [fromStationCode, toStationCode, selectedClass, hideOffDayTrains, travelDate]);
 
   // Keep selectedTrainNumber synced with matchingTrains in Journey Mode
   useEffect(() => {
     if (mode === 'JOURNEY' && matchingTrains.length > 0) {
       const stillValid = matchingTrains.some((t) => t.trainNumber === selectedTrainNumber);
       if (!stillValid) {
-        setSelectedTrainNumber(matchingTrains[0].trainNumber);
+        const firstOperating =
+          matchingTrains.find((t) => isTrainOperatingOnDate(t, travelDate)) || matchingTrains[0];
+        setSelectedTrainNumber(firstOperating.trainNumber);
       }
     }
-  }, [mode, matchingTrains, selectedTrainNumber]);
+  }, [mode, matchingTrains, selectedTrainNumber, travelDate]);
 
   // Handle Corridor Quick Selection
   const handleSelectCorridor = (corridor: TransitCorridor) => {
@@ -172,11 +186,13 @@ export const App: React.FC = () => {
       return fromIdx !== -1 && toIdx !== -1 && fromIdx < toIdx;
     });
     if (matching.length > 0) {
-      setSelectedTrainNumber(matching[0].trainNumber);
+      const preferred =
+        matching.find((t) => isTrainOperatingOnDate(t, travelDate)) || matching[0];
+      setSelectedTrainNumber(preferred.trainNumber);
     }
   };
 
-  // Station Swapping with 1-click (preserves travelDate and selectedClass)
+  // Station Swapping with 1-click (preserves travelDate, class, channel, and passengers)
   const handleSwapStations = () => {
     const nextFrom = toStationCode;
     const nextTo = fromStationCode;
@@ -194,7 +210,9 @@ export const App: React.FC = () => {
       return fromIdx !== -1 && toIdx !== -1 && fromIdx < toIdx;
     });
     if (matching.length > 0) {
-      setSelectedTrainNumber(matching[0].trainNumber);
+      const preferred =
+        matching.find((t) => isTrainOperatingOnDate(t, travelDate)) || matching[0];
+      setSelectedTrainNumber(preferred.trainNumber);
     }
   };
 
@@ -202,16 +220,23 @@ export const App: React.FC = () => {
     setFromStationCode('DA');
     setToStationCode('RJ');
     setSelectedClass('ALL');
+    setHideOffDayTrains(false);
     setActiveCorridorId('corridor-dhk-raj');
     setSelectedTrainNumber('753');
   };
 
-  // Selected Train object
+  // Selected Train object & Single Source of Truth Route Segment
   const currentTrain = useMemo(() => {
     return TRAINS.find((t) => t.trainNumber === selectedTrainNumber) || TRAINS[0];
   }, [selectedTrainNumber]);
 
-  // Effective selected seat class for fare calculator and ticket pass
+  const activeSegment = useMemo(() => {
+    if (mode === 'JOURNEY') {
+      return computeRouteSegment(currentTrain, fromStationCode, toStationCode);
+    }
+    return computeRouteSegment(currentTrain);
+  }, [mode, currentTrain, fromStationCode, toStationCode]);
+
   const effectiveClass: SeatClass = useMemo(() => {
     if (selectedClass !== 'ALL' && currentTrain.availableClasses.includes(selectedClass)) {
       return selectedClass;
@@ -223,29 +248,32 @@ export const App: React.FC = () => {
     {
       id: 'TIMELINE',
       icon: <MapPin className="w-3.5 h-3.5 shrink-0" />,
-      label: 'Stops & Timeline',
-      labelBn: 'স্টেশন ও ট্র্যাকার',
+      label: 'Stops & Stepper',
+      labelBn: 'স্টেশন ও স্টেপার',
     },
     {
       id: 'FARE',
       icon: <Calculator className="w-3.5 h-3.5 shrink-0" />,
-      label: 'Fare Matrix',
-      labelBn: 'ভাড়ার তালিকা',
+      label: 'Fare Calculator',
+      labelBn: 'ভাড়া ক্যালকুলেটর',
     },
     {
       id: 'TICKET',
       icon: <Ticket className="w-3.5 h-3.5 shrink-0" />,
-      label: 'Offline Pass',
-      labelBn: 'অফলাইন পাস',
+      label: 'Journey Summary',
+      labelBn: 'যাত্রা কার্ড',
     },
   ];
+
+  const selectedWeekday = getWeekdayName(travelDate);
+  const currentTrainOperating = isTrainOperatingOnDate(currentTrain, travelDate);
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex flex-col font-sans transition-colors duration-200">
       {/* Subtle Top Scroll Progress Bar */}
       <ScrollProgressBar />
 
-      {/* Top Utility & Live Status Bar */}
+      {/* Top Utility & Roster Header */}
       <TopStatusBar
         darkMode={darkMode}
         setDarkMode={setDarkMode}
@@ -263,7 +291,7 @@ export const App: React.FC = () => {
       {/* Main Workspace with Route Open Transition */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-5 lg:p-6">
         <RouteTransition routeKey={routeKey.split('/')[1] || 'home'} className="space-y-5">
-          {/* Workstation Controls (Search or Live Tracker) */}
+          {/* Workstation Controls (Search or Direct Roster Inspector) */}
           <WorkstationControls
             mode={mode}
             setMode={setMode}
@@ -281,9 +309,12 @@ export const App: React.FC = () => {
             setTravelDate={setTravelDate}
             selectedClass={selectedClass}
             setSelectedClass={setSelectedClass}
+            hideOffDayTrains={hideOffDayTrains}
+            setHideOffDayTrains={setHideOffDayTrains}
             selectedTrainNumber={selectedTrainNumber}
             setSelectedTrainNumber={setSelectedTrainNumber}
             onSwapStations={handleSwapStations}
+            onResetFilters={handleResetFilters}
             isBengali={isBengali}
           />
 
@@ -294,23 +325,27 @@ export const App: React.FC = () => {
               {mode === 'JOURNEY' ? (
                 <ScheduleTable
                   trains={matchingTrains}
+                  fromStationCode={fromStationCode}
+                  toStationCode={toStationCode}
+                  travelDate={travelDate}
                   selectedTrainNumber={selectedTrainNumber}
                   onSelectTrain={(num) => {
                     setSelectedTrainNumber(num);
                     setActiveTab('TIMELINE');
                   }}
                   selectedClass={selectedClass}
+                  bookingChannel={bookingChannel}
                   isBengali={isBengali}
                   onResetFilters={handleResetFilters}
                 />
               ) : (
-                /* Mode B active telemetry summary panel */
+                /* Mode B active roster summary panel */
                 <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-4 sm:p-5 space-y-3">
                   <div className="flex items-center justify-between pb-2.5 border-b border-zinc-200 dark:border-zinc-800">
                     <div className="flex items-center gap-2">
                       <TrainTrack className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                       <h2 className="font-bold text-sm text-zinc-900 dark:text-zinc-100">
-                        Active Telemetry Track
+                        Roster Specifications
                       </h2>
                     </div>
                     <span className="font-mono text-xs px-2 py-0.5 rounded bg-emerald-600 text-white font-bold tabular-nums">
@@ -332,36 +367,51 @@ export const App: React.FC = () => {
                       </span>
                     </div>
                     <div className="flex justify-between gap-2 py-1.5 border-b border-zinc-100 dark:border-zinc-800">
-                      <span className="text-zinc-600 dark:text-zinc-400">Off-Day:</span>
+                      <span className="text-zinc-600 dark:text-zinc-400">Scheduled Run:</span>
+                      <span className="font-mono tabular-nums font-medium text-right">
+                        {currentTrain.departureTime} → {currentTrain.arrivalTime}
+                        {currentTrain.overnight ? ' (+1d)' : ''} ({formatDuration(currentTrain.durationMinutes)})
+                      </span>
+                    </div>
+                    <div className="flex justify-between gap-2 py-1.5 border-b border-zinc-100 dark:border-zinc-800">
+                      <span className="text-zinc-600 dark:text-zinc-400">Weekly Off-Day:</span>
                       <span className="font-mono text-rose-700 dark:text-rose-400 font-bold">
-                        {currentTrain.offDays.join(', ')}
+                        {currentTrain.offDays.length === 0
+                          ? 'None (Runs Daily)'
+                          : currentTrain.offDays.join(', ')}
                       </span>
                     </div>
                     <div className="flex justify-between gap-2 py-1.5">
-                      <span className="text-zinc-600 dark:text-zinc-400">Live Status:</span>
-                      <span className="font-mono text-emerald-700 dark:text-emerald-400 font-bold uppercase">
-                        {currentTrain.liveStatus.state}
+                      <span className="text-zinc-600 dark:text-zinc-400">
+                        Status ({selectedWeekday}):
+                      </span>
+                      <span
+                        className={`font-mono font-bold uppercase ${
+                          currentTrainOperating
+                            ? 'text-emerald-700 dark:text-emerald-400'
+                            : 'text-rose-700 dark:text-rose-400'
+                        }`}
+                      >
+                        {currentTrainOperating ? 'OPERATING' : 'OFF-DAY'}
                       </span>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* Boarding Guidance Note */}
+              {/* Data Provenance & Boarding Guidance */}
               <div className="p-3.5 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-600 dark:text-zinc-400 flex items-start gap-2.5">
                 <Info className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                 <div>
                   <span className="font-semibold text-zinc-900 dark:text-zinc-100">
-                    Official Bangladesh Railway Boarding Guidance
+                    Reference Schedule &amp; Tariff Notice ({DATASET_METADATA.version})
                   </span>
-                  <p className="mt-1 text-xs leading-relaxed">
-                    Report to the assigned platform at least 15 minutes before scheduled departure. Carry your original NID or photo identification for e-ticket verification.
-                  </p>
+                  <p className="mt-1 text-xs leading-relaxed">{DATASET_METADATA.disclaimer}</p>
                 </div>
               </div>
             </div>
 
-            {/* Right Workstation Pane (7 cols on desktop): Timeline / Fares / Journey Card */}
+            {/* Right Workstation Pane (7 cols on desktop): Stepper / Fare Calculator / Summary */}
             <div className="lg:col-span-7 min-w-0 space-y-4">
               {/* View Tab Switcher with Shared-Element Active Indicator */}
               <div
@@ -404,29 +454,38 @@ export const App: React.FC = () => {
               <AnimatePresence mode="wait">
                 {activeTab === 'TIMELINE' && (
                   <motion.div
-                    key={`timeline-${currentTrain.trainNumber}`}
+                    key={`timeline-${currentTrain.trainNumber}-${activeSegment.originHalt.stationCode}-${activeSegment.destinationHalt.stationCode}`}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -6 }}
                     transition={{ duration: 0.22, ease: TRANSIT_EASE }}
                   >
-                    <TrainTimeline train={currentTrain} isBengali={isBengali} />
+                    <TrainTimeline
+                      train={currentTrain}
+                      segment={activeSegment}
+                      travelDate={travelDate}
+                      isBengali={isBengali}
+                    />
                   </motion.div>
                 )}
 
                 {activeTab === 'FARE' && (
                   <motion.div
-                    key={`fare-${currentTrain.trainNumber}`}
+                    key={`fare-${currentTrain.trainNumber}-${activeSegment.distanceKm}`}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -6 }}
                     transition={{ duration: 0.22, ease: TRANSIT_EASE }}
                   >
                     <FareCalculator
-                      distanceKm={currentTrain.totalDistanceKm}
+                      segment={activeSegment}
                       availableClasses={currentTrain.availableClasses}
                       selectedClass={effectiveClass}
                       onSelectClass={(cls) => setSelectedClass(cls)}
+                      bookingChannel={bookingChannel}
+                      setBookingChannel={setBookingChannel}
+                      passengers={passengers}
+                      setPassengers={setPassengers}
                       isBengali={isBengali}
                       onProceedToTicket={() => setActiveTab('TICKET')}
                     />
@@ -435,7 +494,7 @@ export const App: React.FC = () => {
 
                 {activeTab === 'TICKET' && (
                   <motion.div
-                    key={`ticket-${currentTrain.trainNumber}-${effectiveClass}`}
+                    key={`ticket-${currentTrain.trainNumber}-${effectiveClass}-${bookingChannel}-${passengers}`}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -6 }}
@@ -443,10 +502,11 @@ export const App: React.FC = () => {
                   >
                     <JourneyCard
                       train={currentTrain}
-                      fromStationCode={fromStationCode}
-                      toStationCode={toStationCode}
+                      segment={activeSegment}
                       travelDate={travelDate}
                       seatClass={effectiveClass}
+                      bookingChannel={bookingChannel}
+                      passengers={passengers}
                       isBengali={isBengali}
                     />
                   </motion.div>
@@ -469,15 +529,17 @@ export const App: React.FC = () => {
       <footer className="mt-auto border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 py-4 px-3 sm:px-6 transition-colors duration-200">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-zinc-600 dark:text-zinc-400">
           <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-            <span className="font-mono font-bold text-zinc-900 dark:text-zinc-100">NRL</span>
+            <span className="font-mono font-bold text-zinc-900 dark:text-zinc-100">
+              RailDesk BD
+            </span>
             <span aria-hidden="true">•</span>
-            <span>Bangladesh Railway Live Journey Tracker, Route Schedules &amp; Fare Calculator</span>
+            <span>Bangladesh Railway Timetable, Route Stepper &amp; Statutory Fare Calculator</span>
           </div>
           <div className="flex items-center gap-3 font-mono text-[11px] tabular-nums">
             <span>Helpline: 131</span>
             <span aria-hidden="true">•</span>
             <span className="text-emerald-700 dark:text-emerald-400 font-semibold">
-              BR Server: Operational
+              Roster: {DATASET_METADATA.version}
             </span>
           </div>
         </div>

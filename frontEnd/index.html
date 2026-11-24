@@ -6,11 +6,11 @@
     <link rel="manifest" href="/manifest.json" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
     <meta name="theme-color" content="#09090b" />
-    <meta name="description" content="NRL - Bangladesh Railway Live Journey Tracker, Route Schedules, Stoppage Timetable, Station Stepper and Fare Matrix." />
-    <title>NRL | Bangladesh Railway Journey Intelligence &amp; Timetable Workstation</title>
+    <meta name="description" content="RailDesk BD - Bangladesh Railway Intercity Timetable, Route Stepper, Operating Day Checker, and Statutory Fare Calculator." />
+    <title>RailDesk BD | Bangladesh Railway Timetable, Route Stepper &amp; Fare Workstation</title>
     <script>
       try {
-        var savedTheme = localStorage.getItem('nrl-theme');
+        var savedTheme = localStorage.getItem('raildesk-theme') || localStorage.getItem('nrl-theme');
         if (savedTheme === 'light') {
           document.documentElement.classList.remove('dark');
         } else {
@@ -23,8 +23,8 @@
     <div id="root"></div>
     <noscript>
       <div style="padding:24px;font-family:system-ui,sans-serif;max-width:640px;margin:40px auto;border:1px solid #d4d4d8;border-radius:8px;">
-        <h1 style="font-size:18px;font-weight:700;margin:0 0 8px;">NRL — Bangladesh Railway Journey Intelligence</h1>
-        <p style="font-size:14px;margin:0;">JavaScript is required to run the interactive timetable, live train stepper, and fare calculator. Please enable JavaScript and reload.</p>
+        <h1 style="font-size:18px;font-weight:700;margin:0 0 8px;">RailDesk BD — Bangladesh Railway Timetable Workstation</h1>
+        <p style="font-size:14px;margin:0;">JavaScript is required to run the interactive timetable, route stepper, and fare calculator. Please enable JavaScript and reload.</p>
       </div>
     </noscript>
     <script type="module" src="/src/main.tsx"></script>

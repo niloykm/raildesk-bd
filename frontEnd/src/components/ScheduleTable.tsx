@@ -1,31 +1,46 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Clock, ArrowRight, ArrowUpDown, ChevronRight } from 'lucide-react';
-import { Train, SeatClass } from '../types/railway';
-import { calculateFares } from '../data/railway';
+import { BookingChannel, SeatClass, Train } from '../types/railway';
+import {
+  calculateFareBreakdown,
+  computeRouteSegment,
+  formatDuration,
+  getWeekdayName,
+  isTrainOperatingOnDate,
+} from '../data/railway';
 import { TAB_SPRING } from './MotionPrimitives';
 
 interface ScheduleTableProps {
   trains: Train[];
+  fromStationCode: string;
+  toStationCode: string;
+  travelDate: string;
   selectedTrainNumber: string;
   onSelectTrain: (trainNumber: string) => void;
   selectedClass: SeatClass | 'ALL';
+  bookingChannel: BookingChannel;
   isBengali: boolean;
   onResetFilters?: () => void;
 }
 
-type SortField = 'DEPARTURE' | 'DURATION' | 'AVAILABILITY';
+type SortField = 'DEPARTURE' | 'DURATION' | 'FARE';
 
 export const ScheduleTable: React.FC<ScheduleTableProps> = ({
   trains,
+  fromStationCode,
+  toStationCode,
+  travelDate,
   selectedTrainNumber,
   onSelectTrain,
   selectedClass,
+  bookingChannel,
   isBengali,
   onResetFilters,
 }) => {
   const [sortField, setSortField] = useState<SortField>('DEPARTURE');
   const [sortAsc, setSortAsc] = useState<boolean>(true);
+  const weekday = getWeekdayName(travelDate);
 
   const toggleSort = (field: SortField) => {
     if (sortField === field) {
@@ -36,24 +51,26 @@ export const ScheduleTable: React.FC<ScheduleTableProps> = ({
     }
   };
 
-  const sortedTrains = [...trains].sort((a, b) => {
+  const rows = trains.map((train) => {
+    const segment = computeRouteSegment(train, fromStationCode, toStationCode);
+    const fares = calculateFareBreakdown(segment.distanceKm, train.availableClasses, bookingChannel, 1);
+    const lowestFare = Math.min(...fares.map((f) => f.totalPerSeat));
+    const operating = isTrainOperatingOnDate(train, travelDate);
+    return { train, segment, fares, lowestFare, operating };
+  });
+
+  const sortedRows = [...rows].sort((a, b) => {
+    // Operating trains always surface first unless explicitly reversed
+    if (a.operating !== b.operating) {
+      return a.operating ? -1 : 1;
+    }
     let cmp = 0;
     if (sortField === 'DEPARTURE') {
-      cmp = a.departureTime.localeCompare(b.departureTime);
+      cmp = a.segment.departureTime.localeCompare(b.segment.departureTime);
     } else if (sortField === 'DURATION') {
-      cmp = a.durationMinutes - b.durationMinutes;
-    } else if (sortField === 'AVAILABILITY') {
-      const aFare = calculateFares(a.totalDistanceKm, a.availableClasses);
-      const bFare = calculateFares(b.totalDistanceKm, b.availableClasses);
-      const aAvail = Object.values(aFare).reduce(
-        (acc: number, curr: { available: number }) => acc + curr.available,
-        0
-      );
-      const bAvail = Object.values(bFare).reduce(
-        (acc: number, curr: { available: number }) => acc + curr.available,
-        0
-      );
-      cmp = aAvail - bAvail;
+      cmp = a.segment.durationMinutes - b.segment.durationMinutes;
+    } else if (sortField === 'FARE') {
+      cmp = a.lowestFare - b.lowestFare;
     }
     return sortAsc ? cmp : -cmp;
   });
@@ -67,7 +84,7 @@ export const ScheduleTable: React.FC<ScheduleTableProps> = ({
             {isBengali ? 'কোনো সরাসরি ট্রেন পাওয়া যায়নি' : 'No Direct Train Services Found'}
           </h3>
           <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1 max-w-sm mx-auto leading-relaxed">
-            Try swapping your origin and destination, selecting &ldquo;All Classes&rdquo;, or choosing a major transit corridor above.
+            Try swapping origin/destination, unchecking &ldquo;Hide off-day trains&rdquo;, choosing &ldquo;All Classes&rdquo;, or picking a major corridor above.
           </p>
         </div>
         {onResetFilters && (
@@ -88,9 +105,14 @@ export const ScheduleTable: React.FC<ScheduleTableProps> = ({
       {/* Table Header Controls */}
       <div className="flex flex-col gap-3 pb-3 border-b border-zinc-200 dark:border-zinc-800">
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100">
-            {isBengali ? 'ট্রেনের সময়সূচী ও সিট প্রাপ্যতা' : 'Daily Train Timetable'}
-          </h2>
+          <div>
+            <h2 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100">
+              {isBengali ? 'ট্রেনের সময়সূচী ও আনুমানিক ভাড়া' : 'Matching Intercity Timetable'}
+            </h2>
+            <p className="text-[11px] text-zinc-600 dark:text-zinc-400 font-mono tabular-nums mt-0.5">
+              {travelDate} ({weekday}) • {bookingChannel === 'ONLINE' ? 'Online (+৳20 fee)' : 'Counter (৳0 fee)'}
+            </p>
+          </div>
           <span className="font-mono text-xs px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 font-bold tabular-nums shrink-0">
             {trains.length} {trains.length === 1 ? 'TRAIN' : 'TRAINS'}
           </span>
@@ -105,7 +127,7 @@ export const ScheduleTable: React.FC<ScheduleTableProps> = ({
             [
               { id: 'DEPARTURE', label: 'Departure' },
               { id: 'DURATION', label: 'Duration' },
-              { id: 'AVAILABILITY', label: 'Seats' },
+              { id: 'FARE', label: 'Lowest Fare' },
             ] as const
           ).map((s) => {
             const isActive = sortField === s.id;
@@ -136,26 +158,28 @@ export const ScheduleTable: React.FC<ScheduleTableProps> = ({
         </div>
       </div>
 
-      {/* High-Density Structured Train Cards (Zero Clipping / Zero Crushing) */}
+      {/* High-Density Structured Train Cards */}
       <div className="space-y-3">
-        {sortedTrains.map((train) => {
+        {sortedRows.map(({ train, segment, fares, operating }) => {
           const isSelected = selectedTrainNumber === train.trainNumber;
-          const fares = calculateFares(train.totalDistanceKm, train.availableClasses);
-          const originHalt = train.halts[0];
-          const terminusHalt = train.halts[train.halts.length - 1];
-          const isDelayed = train.liveStatus.state === 'DELAYED';
+          const arrivesNextDay =
+            (segment.destinationHalt.dayOffset ?? 0) > (segment.originHalt.dayOffset ?? 0);
 
           return (
             <article
               key={train.trainNumber}
               onClick={() => onSelectTrain(train.trainNumber)}
               className={`p-3.5 sm:p-4 rounded-lg border transition-colors duration-200 cursor-pointer space-y-3 ${
-                isSelected
+                !operating
+                  ? isSelected
+                    ? 'border-rose-500 bg-rose-50/40 dark:bg-rose-950/20 ring-1 ring-rose-500/40'
+                    : 'border-rose-200 dark:border-rose-900/60 bg-rose-50/20 dark:bg-rose-950/10 opacity-85 hover:opacity-100'
+                  : isSelected
                   ? 'border-emerald-600 dark:border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/25 ring-1 ring-emerald-500/40'
                   : 'border-zinc-200 dark:border-zinc-800 bg-slate-50/40 dark:bg-zinc-950/40 hover:border-zinc-400 dark:hover:border-zinc-700'
               }`}
             >
-              {/* Row 1: Identity + Status */}
+              {/* Row 1: Identity + Operating Day Status */}
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-start gap-2.5 min-w-0">
                   <span className="font-mono text-xs sm:text-sm font-bold px-2 py-1 rounded-md bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 shrink-0 tabular-nums">
@@ -168,8 +192,10 @@ export const ScheduleTable: React.FC<ScheduleTableProps> = ({
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-zinc-600 dark:text-zinc-400 mt-0.5">
                       <span>{train.routeType}</span>
                       <span aria-hidden="true">•</span>
-                      <span className="font-mono text-rose-700 dark:text-rose-400 font-semibold">
-                        Off: {train.offDays.join(', ')}
+                      <span className="font-mono text-zinc-700 dark:text-zinc-300">
+                        {train.offDays.length === 0
+                          ? 'Runs Daily'
+                          : `Off: ${train.offDays.join(', ')}`}
                       </span>
                     </div>
                   </div>
@@ -177,64 +203,65 @@ export const ScheduleTable: React.FC<ScheduleTableProps> = ({
 
                 <span
                   className={`shrink-0 font-mono text-[10px] font-bold uppercase px-2 py-0.5 rounded-md border tabular-nums ${
-                    isDelayed
-                      ? 'bg-amber-500/10 text-amber-800 dark:text-amber-300 border-amber-500/30'
-                      : 'bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border-emerald-500/30'
+                    operating
+                      ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700'
+                      : 'bg-rose-50 dark:bg-rose-950/50 text-rose-800 dark:text-rose-300 border-rose-300 dark:border-rose-700'
                   }`}
                 >
-                  {isDelayed ? `+${train.liveStatus.delayMinutes}m DELAY` : 'ON TIME'}
+                  {operating ? 'OPERATING' : `OFF-DAY (${weekday.slice(0, 3)})`}
                 </span>
               </div>
 
-              {/* Row 2: Clean Departure -> Duration -> Arrival Rail */}
+              {/* Row 2: Segment Departure -> Duration -> Segment Arrival Rail */}
               <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3 py-2 px-3 rounded-md bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 font-mono tabular-nums">
                 <div>
                   <div className="text-[10px] uppercase font-sans text-zinc-500 dark:text-zinc-400">
                     Departs
                   </div>
                   <div className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
-                    {train.departureTime}
+                    {segment.departureTime}
                   </div>
                   <div className="text-[10px] text-zinc-600 dark:text-zinc-400">
-                    {originHalt.stationCode}
+                    {segment.originHalt.stationCode}
                   </div>
                 </div>
 
                 <div className="flex flex-col items-center text-center min-w-0 px-1">
                   <span className="text-[11px] font-semibold text-zinc-700 dark:text-zinc-300">
-                    {Math.floor(train.durationMinutes / 60)}h {train.durationMinutes % 60}m
+                    {formatDuration(segment.durationMinutes)}
                   </span>
                   <div className="w-full max-w-[140px] h-[2px] bg-zinc-300 dark:bg-zinc-700 relative my-1.5">
                     <ArrowRight className="w-3 h-3 absolute -right-1 -top-[5px] text-zinc-500 dark:text-zinc-400" />
                   </div>
                   <span className="text-[10px] font-sans text-zinc-600 dark:text-zinc-400 truncate max-w-full">
-                    {train.halts.length} stops • {train.totalDistanceKm} km
+                    {segment.intermediateStops === 0
+                      ? 'Non-stop segment'
+                      : `${segment.intermediateStops} intermediate halt${segment.intermediateStops > 1 ? 's' : ''}`}{' '}
+                    • {segment.distanceKm} km
                   </span>
                 </div>
 
                 <div className="text-right">
                   <div className="text-[10px] uppercase font-sans text-zinc-500 dark:text-zinc-400">
-                    Arrives
+                    Arrives{arrivesNextDay ? ' (+1d)' : ''}
                   </div>
                   <div className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
-                    {train.arrivalTime}
+                    {segment.arrivalTime}
                   </div>
                   <div className="text-[10px] text-zinc-600 dark:text-zinc-400">
-                    {terminusHalt.stationCode}
+                    {segment.destinationHalt.stationCode}
                   </div>
                 </div>
               </div>
 
-              {/* Row 3: Horizontal Seat Availability Chips + Action Button */}
-              <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+              {/* Row 3: Deterministic Segment Fare Chips + Inspect CTA */}
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5">
                 <div className="flex flex-wrap gap-1.5 font-mono tabular-nums">
-                  {train.availableClasses.map((cls) => {
-                    const fare = fares[cls];
-                    if (!fare) return null;
-                    const isTarget = selectedClass === cls || selectedClass === 'ALL';
+                  {fares.map((fare) => {
+                    const isTarget = selectedClass === fare.seatClass || selectedClass === 'ALL';
                     return (
                       <div
-                        key={cls}
+                        key={fare.seatClass}
                         className={`px-2 py-1 rounded-md text-[11px] border flex items-center gap-1.5 ${
                           isTarget
                             ? 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700'
@@ -242,13 +269,10 @@ export const ScheduleTable: React.FC<ScheduleTableProps> = ({
                         }`}
                       >
                         <span className="text-[10px] font-sans font-semibold text-zinc-600 dark:text-zinc-400">
-                          {cls}
+                          {fare.seatClass}
                         </span>
                         <span className="font-bold text-emerald-700 dark:text-emerald-400">
-                          ৳{fare.total}
-                        </span>
-                        <span className="text-[10px] text-zinc-500 dark:text-zinc-400">
-                          ({fare.available})
+                          ৳{fare.totalPerSeat}
                         </span>
                       </div>
                     );

@@ -1,9 +1,10 @@
-# NRL Frontend | Bangladesh Railway Journey Intelligence
+# RailDesk BD Frontend (`raildesk-bd`)
 
-The client application for NRL, built with React 19, TypeScript, Tailwind CSS 4, and Vite 6.
+Bangladesh Railway Intercity Timetable, Route Stepper & Statutory Fare Workstation built with React 19, TypeScript, Tailwind CSS 4, Framer Motion, and Vite 6.
 
-### Available Scripts
+### Scripts
 
-- `npm run dev`: Launch local Vite dev server.
-- `npm run build`: Run `tsc --noEmit` and build optimized production distribution into `dist/`.
-- `npm run preview`: Preview the production build locally.
+- `npm run dev` — Launch local Vite development server.
+- `npm run build` — Run strict `tsc --noEmit` and compile production bundle into `dist/`.
+- `npm run lint` — Run ESLint checks.
+- `npm run preview` — Preview production build locally.

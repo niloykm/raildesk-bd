@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeftRight, Compass, TrainTrack } from 'lucide-react';
+import { ArrowLeftRight, Compass, TrainTrack, RotateCcw } from 'lucide-react';
 import { StationSelector } from './StationSelector';
-import { TRAINS } from '../data/railway';
+import { TRAINS, getWeekdayName } from '../data/railway';
 import { SeatClass } from '../types/railway';
 import { TAB_SPRING, TRANSIT_EASE } from './MotionPrimitives';
 
@@ -17,9 +17,12 @@ interface WorkstationControlsProps {
   setTravelDate: (date: string) => void;
   selectedClass: SeatClass | 'ALL';
   setSelectedClass: (cls: SeatClass | 'ALL') => void;
+  hideOffDayTrains: boolean;
+  setHideOffDayTrains: (val: boolean) => void;
   selectedTrainNumber: string;
   setSelectedTrainNumber: (trainNum: string) => void;
   onSwapStations: () => void;
+  onResetFilters: () => void;
   isBengali: boolean;
 }
 
@@ -34,7 +37,7 @@ const CLASS_OPTIONS: { id: SeatClass | 'ALL'; label: string; labelBn: string }[]
 
 const POPULAR_TRAINS = [
   { number: '702', name: 'Subarna [702]' },
-  { number: '787', name: 'Sonar Bangla [787]' },
+  { number: '788', name: 'Sonar Bangla [788]' },
   { number: '753', name: 'Silk City [753]' },
   { number: '759', name: 'Padma [759]' },
   { number: '709', name: 'Parabat [709]' },
@@ -53,12 +56,16 @@ export const WorkstationControls: React.FC<WorkstationControlsProps> = ({
   setTravelDate,
   selectedClass,
   setSelectedClass,
+  hideOffDayTrains,
+  setHideOffDayTrains,
   selectedTrainNumber,
   setSelectedTrainNumber,
   onSwapStations,
+  onResetFilters,
   isBengali,
 }) => {
   const [swapCount, setSwapCount] = useState(0);
+  const selectedWeekday = getWeekdayName(travelDate);
 
   const handleSwap = () => {
     setSwapCount((c) => c + 1);
@@ -76,7 +83,7 @@ export const WorkstationControls: React.FC<WorkstationControlsProps> = ({
 
   return (
     <section
-      aria-label="Transit Search and Tracker Controls"
+      aria-label="Transit Search and Schedule Controls"
       className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-4 sm:p-5 transition-colors duration-200"
     >
       {/* Mode Switcher Tabs with Shared-Element Active Indicator */}
@@ -105,7 +112,7 @@ export const WorkstationControls: React.FC<WorkstationControlsProps> = ({
           )}
           <Compass className="w-4 h-4 text-emerald-600 dark:text-emerald-400 relative z-10 shrink-0" />
           <span className="relative z-10">
-            {isBengali ? 'মোড ১: যাত্রা ও ট্রেনের সময়সূচী' : 'Mode A: Journey & Train Search'}
+            {isBengali ? 'মোড ১: রুট ও সময়সূচী অনুসন্ধান' : 'Mode A: Route & Schedule Search'}
           </span>
         </button>
 
@@ -129,7 +136,7 @@ export const WorkstationControls: React.FC<WorkstationControlsProps> = ({
           )}
           <TrainTrack className="w-4 h-4 text-emerald-600 dark:text-emerald-400 relative z-10 shrink-0" />
           <span className="relative z-10">
-            {isBengali ? 'মোড ২: রুট ও সরাসরি ট্র্যাকার' : 'Mode B: Train Route & Live Tracker'}
+            {isBengali ? 'মোড ২: সরাসরি ট্রেন ইন্সপেক্টর' : 'Mode B: Direct Train Roster & Stepper'}
           </span>
         </button>
       </div>
@@ -185,28 +192,28 @@ export const WorkstationControls: React.FC<WorkstationControlsProps> = ({
               />
             </div>
 
-            {/* Secondary Controls: Date Picker & Class Filter */}
+            {/* Secondary Controls: Date Picker, Operating Day Filter & Class Filter */}
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4 pt-3 border-t border-zinc-200 dark:border-zinc-800">
               {/* Travel Date */}
               <div className="md:col-span-4">
                 <label
-                  htmlFor="nrl-travel-date"
+                  htmlFor="raildesk-travel-date"
                   className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider mb-1.5 flex items-center justify-between"
                 >
                   <span>{isBengali ? 'যাত্রার তারিখ' : 'Travel Date'}</span>
-                  <span className="text-[11px] text-zinc-500 dark:text-zinc-400 font-normal normal-case">
-                    Advance 10d
+                  <span className="font-mono text-[11px] font-bold text-emerald-700 dark:text-emerald-400 normal-case">
+                    {selectedWeekday}
                   </span>
                 </label>
                 <input
-                  id="nrl-travel-date"
+                  id="raildesk-travel-date"
                   type="date"
                   value={travelDate}
                   onChange={(e) => setTravelDate(e.target.value)}
                   className="w-full min-h-[44px] md:min-h-[40px] px-3 bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-md text-xs font-mono tabular-nums text-zinc-900 dark:text-zinc-100"
                 />
                 {/* Quick Date offsets */}
-                <div className="flex items-center gap-1.5 mt-2">
+                <div className="flex flex-wrap items-center gap-1.5 mt-2">
                   {[
                     { days: 0, en: 'Today', bn: 'আজ' },
                     { days: 1, en: '+1 Day', bn: '+১ দিন' },
@@ -224,45 +231,72 @@ export const WorkstationControls: React.FC<WorkstationControlsProps> = ({
                 </div>
               </div>
 
-              {/* Travel Class Selector */}
-              <div className="md:col-span-8">
-                <span className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider mb-1.5">
-                  {isBengali ? 'শ্রেণি নির্বাচন' : 'Travel Class Filter'}
-                </span>
-                <div className="flex flex-wrap gap-1.5">
-                  {CLASS_OPTIONS.map((opt) => {
-                    const isSelected = selectedClass === opt.id;
-                    return (
-                      <button
-                        key={opt.id}
-                        type="button"
-                        onClick={() => setSelectedClass(opt.id)}
-                        aria-pressed={isSelected}
-                        className={`relative min-h-[40px] px-3 rounded-md text-xs font-medium transition-colors duration-200 active:scale-[0.98] ${
-                          isSelected
-                            ? 'text-white'
-                            : 'bg-slate-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 hover:border-emerald-500'
-                        }`}
-                      >
-                        {isSelected && (
-                          <motion.span
-                            layoutId="class-filter-pill"
-                            transition={TAB_SPRING}
-                            className="absolute inset-0 rounded-md bg-emerald-600"
-                          />
-                        )}
-                        <span className="relative z-10">
-                          {isBengali ? opt.labelBn : opt.label}
-                        </span>
-                      </button>
-                    );
-                  })}
+              {/* Travel Class Selector + Operating-Day Toggle */}
+              <div className="md:col-span-8 flex flex-col justify-between gap-2.5">
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-1.5">
+                    <span className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">
+                      {isBengali ? 'শ্রেণি নির্বাচন' : 'Travel Class Filter'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={onResetFilters}
+                      className="text-[11px] text-zinc-600 dark:text-zinc-400 hover:text-emerald-600 dark:hover:text-emerald-400 inline-flex items-center gap-1 transition-colors"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                      <span>{isBengali ? 'রিসেট' : 'Reset'}</span>
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {CLASS_OPTIONS.map((opt) => {
+                      const isSelected = selectedClass === opt.id;
+                      return (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => setSelectedClass(opt.id)}
+                          aria-pressed={isSelected}
+                          className={`relative min-h-[40px] px-3 rounded-md text-xs font-medium transition-colors duration-200 active:scale-[0.98] ${
+                            isSelected
+                              ? 'text-white'
+                              : 'bg-slate-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 hover:border-emerald-500'
+                          }`}
+                        >
+                          {isSelected && (
+                            <motion.span
+                              layoutId="class-filter-pill"
+                              transition={TAB_SPRING}
+                              className="absolute inset-0 rounded-md bg-emerald-600"
+                            />
+                          )}
+                          <span className="relative z-10">
+                            {isBengali ? opt.labelBn : opt.label}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
+
+                {/* Operating Day Filter Checkbox */}
+                <label className="inline-flex items-center gap-2 text-xs text-zinc-700 dark:text-zinc-300 cursor-pointer select-none w-fit">
+                  <input
+                    type="checkbox"
+                    checked={hideOffDayTrains}
+                    onChange={(e) => setHideOffDayTrains(e.target.checked)}
+                    className="h-4 w-4 rounded accent-emerald-600 cursor-pointer"
+                  />
+                  <span>
+                    {isBengali
+                      ? `শুধুমাত্র ${selectedWeekday} চলাচলকারী ট্রেন দেখান`
+                      : `Hide trains on weekly off-day (${selectedWeekday})`}
+                  </span>
+                </label>
               </div>
             </div>
           </motion.div>
         ) : (
-          /* MODE B: DIRECT TRAIN ROUTE & LIVE TRACKER */
+          /* MODE B: DIRECT TRAIN ROUTE & STEPPER */
           <motion.div
             key="mode-tracker"
             initial={{ opacity: 0, y: 8 }}
@@ -273,13 +307,13 @@ export const WorkstationControls: React.FC<WorkstationControlsProps> = ({
           >
             <div>
               <label
-                htmlFor="nrl-train-select"
+                htmlFor="raildesk-train-select"
                 className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider mb-1.5"
               >
                 {isBengali ? 'ট্রেন নম্বর অথবা নাম নির্বাচন করুন' : 'Select Train Number / Name'}
               </label>
               <select
-                id="nrl-train-select"
+                id="raildesk-train-select"
                 value={selectedTrainNumber}
                 onChange={(e) => setSelectedTrainNumber(e.target.value)}
                 className="w-full min-h-[44px] px-3 bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-md text-xs sm:text-sm font-medium text-zinc-900 dark:text-zinc-100"
@@ -287,7 +321,8 @@ export const WorkstationControls: React.FC<WorkstationControlsProps> = ({
                 {TRAINS.map((t) => (
                   <option key={t.trainNumber} value={t.trainNumber}>
                     [{t.trainNumber}] {t.trainName} ({t.trainNameBn}) — {t.originStationCode} →{' '}
-                    {t.destinationStationCode} ({t.departureTime})
+                    {t.destinationStationCode} ({t.departureTime}
+                    {t.overnight ? ' +1d' : ''})
                   </option>
                 ))}
               </select>

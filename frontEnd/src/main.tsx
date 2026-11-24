@@ -33,7 +33,7 @@ if (typeof window !== "undefined") {
 
   // Auto-recover if a newly deployed hashed Vite chunk fails to preload
   window.addEventListener("vite:preloadError", () => {
-    const reloadKey = "nrl-preload-reloaded";
+    const reloadKey = "raildesk-preload-reloaded";
     if (!sessionStorage.getItem(reloadKey)) {
       sessionStorage.setItem(reloadKey, "1");
       window.location.reload();

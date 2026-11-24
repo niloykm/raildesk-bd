@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Radio, Sun, Moon, Train as TrainIcon } from 'lucide-react';
-import { TRANSIT_CORRIDORS } from '../data/railway';
+import { Radio, Sun, Moon, Train as TrainIcon, Clock } from 'lucide-react';
+import { TRANSIT_CORRIDORS, getBangladeshTimeNow } from '../data/railway';
 import { TransitCorridor } from '../types/railway';
 import { TAB_SPRING } from './MotionPrimitives';
 
@@ -24,6 +24,15 @@ export const TopStatusBar: React.FC<TopStatusBarProps> = ({
   setIsBengali,
   onNavigateHome,
 }) => {
+  const [bstClock, setBstClock] = useState(() => getBangladeshTimeNow());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setBstClock(getBangladeshTimeNow());
+    }, 15000);
+    return () => clearInterval(timer);
+  }, []);
+
   return (
     <header className="sticky top-0 z-30 border-b border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-sm transition-colors duration-200">
       {/* Primary operational bar */}
@@ -32,41 +41,38 @@ export const TopStatusBar: React.FC<TopStatusBarProps> = ({
         <button
           type="button"
           onClick={onNavigateHome}
-          className="flex items-center gap-3 text-left rounded-md focus-visible:outline-none active:scale-[0.99] transition-transform"
+          className="flex items-center gap-3 text-left rounded-md active:scale-[0.99] transition-transform min-w-0 max-w-full"
         >
-          <div className="h-9 w-9 rounded-md bg-emerald-600 text-white flex items-center justify-center font-mono font-bold text-lg shrink-0">
+          <div className="h-9 w-9 rounded-md bg-emerald-600 text-white flex items-center justify-center shrink-0">
             <TrainIcon className="w-5 h-5" />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <span className="font-mono font-extrabold tracking-tight text-base sm:text-lg text-zinc-900 dark:text-zinc-100">
-                NRL
+                {isBengali ? 'রেলডেস্ক বিডি' : 'RailDesk BD'}
               </span>
               <span className="text-[11px] font-mono font-semibold px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
-                TRANSIT OPS
+                BR ROSTER
               </span>
             </div>
             <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-tight truncate">
               {isBengali
-                ? 'বাংলাদেশ রেলওয়ে ভ্রমণ ও রুট ইন্টেলিজেন্স'
-                : 'Bangladesh Railway Live Journey Tracker & Fare Calculator'}
+                ? 'বাংলাদেশ রেলওয়ে সময়সূচী, রুট স্টেপার ও ভাড়া ক্যালকুলেটর'
+                : 'Bangladesh Railway Timetable, Route Stepper & Statutory Fare Calculator'}
             </p>
           </div>
         </button>
 
-        {/* Live System Signal & Controls */}
+        {/* Honest Dataset Provenance + Live BST Clock + Controls */}
         <div className="flex items-center flex-wrap gap-2 text-xs">
-          {/* BR Server Gateway Status */}
-          <div className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/70 font-mono">
-            <span className="relative flex h-2 w-2 shrink-0" aria-hidden="true">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600 dark:bg-emerald-400"></span>
-            </span>
-            <span className="font-semibold text-[11px] tracking-wide">
-              BR SERVER: OPERATIONAL
-            </span>
-            <span className="text-[10px] text-emerald-700 dark:text-emerald-400 hidden sm:inline tabular-nums">
-              38ms
+          <div
+            className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-slate-100 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-800 font-mono tabular-nums"
+            title="Reference timetable synchronized against Bangladesh Standard Time (Asia/Dhaka, UTC+6)"
+          >
+            <Clock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <span className="font-semibold text-[11px]">{bstClock.hhmm} BST</span>
+            <span className="text-[10px] text-zinc-500 dark:text-zinc-400 hidden sm:inline">
+              • STATIC ROSTER
             </span>
           </div>
 
@@ -87,7 +93,11 @@ export const TopStatusBar: React.FC<TopStatusBarProps> = ({
             onClick={() => setDarkMode(!darkMode)}
             className="h-9 w-9 sm:h-8 sm:w-8 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-800 dark:text-zinc-200 flex items-center justify-center transition-colors duration-200 active:scale-[0.98]"
             aria-label="Toggle Theme"
-            title={darkMode ? 'Switch to Outdoor High-Contrast Light Mode' : 'Switch to High-Clarity Dark Canvas'}
+            title={
+              darkMode
+                ? 'Switch to Outdoor High-Contrast Light Mode'
+                : 'Switch to High-Clarity Dark Canvas'
+            }
           >
             {darkMode ? (
               <Sun className="w-4 h-4 text-amber-400" />

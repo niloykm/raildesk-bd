@@ -1,7 +1,7 @@
-# NRL ENGINEERING STANDARDS
+# RailDesk BD — Engineering Standards
 
-- Strict TypeScript: Full type-safety for Train, Station, RouteSchedule, StationHalt, SeatClass, and FareBreakdown. Zero `any`.
-- Client vs Server Boundaries: Server Components for static station databases and fare rules; isolate `'use client'` strictly to search inputs, station swap toggles, and countdown timers.
-- Resilient Data Handling: Graceful fallbacks and clear offline indicators when railway API or external timetable scrapers encounter downtime.
-- Viewport Adaptation: Responsive layout: side-by-side split view on desktop (>= 1024px); thumb-friendly, sticky bottom search sheet on mobile (< 1024px).
-- Zero Layout Shift: Pre-calculated container heights for timetable lists and route maps to prevent content jumping during load.
+- **Strict TypeScript**: Full end-to-end type safety for `Train`, `Station`, `StationHalt`, `RouteSegment`, `SeatClass`, `FareBreakdown`, `BookingChannel`, and `TrainProgressEstimate`. Zero `any`.
+- **Single Source of Truth**: Every component (`ScheduleTable`, `TrainTimeline`, `FareCalculator`, `JourneyCard`) consumes `computeRouteSegment()` and `calculateFareBreakdown()` so segment distances, durations, timings, and fares are 100% consistent across all views.
+- **Honest Data Provenance**: Static reference roster timetables and BST (`Asia/Dhaka`, UTC+6) schedule-estimated progress are explicitly labeled as reference estimates — never fabricating live GPS delays, latency pings, or synthetic open seat counts.
+- **Resilient Rendering**: Root `<ErrorBoundary>` with recovery + cache-clear actions, self-cleaning `sw.js` kill-switch for legacy caches, and asset-safe SPA rewrites in `vercel.json` so deployments never collapse to a blank screen.
+- **Viewport Discipline**: 12-column split workstation on desktop (`>= 1024px`, constrained to `max-w-7xl`) and zero-horizontal-overflow (`scrollWidth <= clientWidth`) single-column layout on mobile (`390x844`).
