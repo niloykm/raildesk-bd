@@ -14,7 +14,7 @@ interface StationSelectorProps {
   isBengali?: boolean;
 }
 
-const HUB_STATIONS = ['DA', 'DA_AIR', 'CTG', 'RJ', 'NAT', 'SYL', 'KLN'];
+const POPULAR_STATIONS = ['DA', 'DA_AIR', 'CTG', 'RJ', 'NAT', 'SYL', 'KLN'];
 
 export const StationSelector: React.FC<StationSelectorProps> = ({
   label,
@@ -58,7 +58,7 @@ export const StationSelector: React.FC<StationSelectorProps> = ({
     return (
       s.name.toLowerCase().includes(q) ||
       s.nameBn.toLowerCase().includes(q) ||
-      (s.shortName && s.shortName.toLowerCase().includes(q)) ||
+      s.shortName.toLowerCase().includes(q) ||
       s.code.toLowerCase().includes(q) ||
       s.division.toLowerCase().includes(q)
     );
@@ -66,52 +66,42 @@ export const StationSelector: React.FC<StationSelectorProps> = ({
 
   return (
     <div className="relative flex-1 min-w-0" ref={containerRef}>
-      <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider mb-1.5">
+      <label className="block text-sm font-medium text-slate-700 dark:text-zinc-300 mb-1.5">
         {isBengali ? labelBn : label}
       </label>
 
-      {/* Combobox Trigger (min 44px touch height) */}
+      {/* Station Picker Button */}
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
-        className="w-full min-h-[44px] px-3 bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-md flex items-center justify-between text-left hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors duration-200 active:scale-[0.99]"
+        className="w-full min-h-[48px] px-3.5 bg-white dark:bg-zinc-950 border border-slate-300 dark:border-zinc-700 rounded-lg flex items-center justify-between gap-2 text-left hover:border-emerald-500 dark:hover:border-emerald-500 transition-colors duration-200 active:scale-[0.99]"
       >
         <div className="flex items-center gap-2.5 min-w-0 overflow-hidden">
           <MapPin className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
           {selectedStation ? (
-            <div className="flex items-center gap-2 truncate">
-              <span className="font-semibold text-sm text-zinc-900 dark:text-zinc-100 truncate">
-                {isBengali ? selectedStation.nameBn : selectedStation.name}
-              </span>
-              <span className="font-mono text-[11px] px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-bold tabular-nums shrink-0">
-                {selectedStation.code}
-              </span>
-            </div>
+            <span className="font-semibold text-[15px] text-slate-900 dark:text-zinc-100 truncate">
+              {isBengali ? selectedStation.nameBn : selectedStation.name}
+            </span>
           ) : (
-            <span className="text-zinc-500 text-sm">Select Station...</span>
+            <span className="text-slate-500 text-sm">Choose a station</span>
           )}
         </div>
         <ChevronDown
-          className={`w-4 h-4 text-zinc-500 dark:text-zinc-400 shrink-0 transition-transform duration-200 ${
+          className={`w-4 h-4 text-slate-500 dark:text-zinc-400 shrink-0 transition-transform duration-200 ${
             isOpen ? 'rotate-180' : ''
           }`}
         />
       </button>
 
-      {/* Quick Select Hub Chips (distinct short names — zero duplicate 'Dhaka' chips) */}
+      {/* Quick-pick station pills */}
       <div className="flex flex-wrap items-center gap-1.5 mt-2">
-        <span className="text-[11px] uppercase font-semibold text-zinc-500 dark:text-zinc-400">
-          {isBengali ? 'হাব:' : 'Hubs:'}
-        </span>
-        {HUB_STATIONS.filter((code) => code !== excludeCode).map((code) => {
+        {POPULAR_STATIONS.filter((code) => code !== excludeCode).map((code) => {
           const station = STATIONS.find((s) => s.code === code);
           if (!station) return null;
           const isSelected = selectedStationCode === code;
-          const chipLabel = isBengali
-            ? station.shortNameBn || station.nameBn
-            : station.shortName || station.name;
+          const chipLabel = isBengali ? station.shortNameBn : station.shortName;
           return (
             <button
               key={code}
@@ -121,10 +111,10 @@ export const StationSelector: React.FC<StationSelectorProps> = ({
                 setIsOpen(false);
               }}
               aria-pressed={isSelected}
-              className={`text-[11px] px-2 py-1 rounded-md transition-colors duration-200 active:scale-[0.98] ${
+              className={`text-xs px-2.5 py-1 rounded-md transition-colors duration-200 active:scale-[0.98] ${
                 isSelected
-                  ? 'bg-emerald-600 text-white font-semibold border border-emerald-600'
-                  : 'bg-slate-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700'
+                  ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-semibold border border-emerald-300 dark:border-emerald-700'
+                  : 'bg-slate-100 dark:bg-zinc-800/80 hover:bg-slate-200/80 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 border border-transparent'
               }`}
             >
               {chipLabel}
@@ -133,7 +123,7 @@ export const StationSelector: React.FC<StationSelectorProps> = ({
         })}
       </div>
 
-      {/* Dropdown Station List */}
+      {/* Searchable Station Dropdown */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -142,30 +132,26 @@ export const StationSelector: React.FC<StationSelectorProps> = ({
             exit={{ opacity: 0, y: 4 }}
             transition={{ duration: 0.18, ease: TRANSIT_EASE }}
             role="listbox"
-            className="absolute z-40 left-0 right-0 mt-1.5 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-md shadow-xl max-h-72 flex flex-col overflow-hidden"
+            className="absolute z-40 left-0 right-0 mt-1.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg shadow-lg max-h-72 flex flex-col overflow-hidden"
           >
-            <div className="p-2 border-b border-zinc-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 sticky top-0">
+            <div className="p-2.5 border-b border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 sticky top-0">
               <div className="relative">
-                <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-500" />
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
                   autoFocus
-                  placeholder={
-                    isBengali
-                      ? 'স্টেশনের নাম বা কোড লিখুন...'
-                      : 'Search station name, code, or division...'
-                  }
+                  placeholder={isBengali ? 'স্টেশনের নাম খুঁজুন...' : 'Search station or city...'}
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  className="w-full pl-8 pr-3 py-2 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-md text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-500"
+                  className="w-full pl-9 pr-3 py-2 bg-white dark:bg-zinc-900 border border-slate-300 dark:border-zinc-700 rounded-md text-sm text-slate-900 dark:text-zinc-100 placeholder-slate-400"
                 />
               </div>
             </div>
 
-            <div className="overflow-y-auto flex-1 divide-y divide-zinc-100 dark:divide-zinc-800">
+            <div className="overflow-y-auto flex-1 divide-y divide-slate-100 dark:divide-zinc-800">
               {filteredStations.length === 0 ? (
-                <div className="p-4 text-center text-xs text-zinc-500 dark:text-zinc-400">
-                  No matching railway station found
+                <div className="p-4 text-center text-sm text-slate-500 dark:text-zinc-400">
+                  No matching station found
                 </div>
               ) : (
                 filteredStations.map((station) => {
@@ -181,28 +167,18 @@ export const StationSelector: React.FC<StationSelectorProps> = ({
                         setIsOpen(false);
                         setQuery('');
                       }}
-                      className={`w-full px-3 py-2.5 text-left flex items-center justify-between text-xs transition-colors hover:bg-emerald-50 dark:hover:bg-emerald-950/40 ${
+                      className={`w-full px-3.5 py-2.5 text-left flex items-center justify-between gap-2 transition-colors hover:bg-emerald-50 dark:hover:bg-emerald-950/30 ${
                         isSelected
-                          ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-300 font-semibold'
-                          : 'text-zinc-800 dark:text-zinc-200'
+                          ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 font-semibold'
+                          : 'text-slate-800 dark:text-zinc-200'
                       }`}
                     >
                       <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-sm truncate">
-                            {isBengali ? station.nameBn : station.name}
-                          </span>
-                          <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-bold tabular-nums">
-                            {station.code}
-                          </span>
+                        <div className="text-sm font-medium truncate">
+                          {isBengali ? station.nameBn : station.name}
                         </div>
-                        <div className="text-[11px] text-zinc-600 dark:text-zinc-400 flex items-center gap-2 mt-0.5">
-                          <span>{station.division} DIVISION</span>
-                          {station.platforms && (
-                            <span className="font-mono tabular-nums">
-                              • {station.platforms} Platform{station.platforms > 1 ? 's' : ''}
-                            </span>
-                          )}
+                        <div className="text-xs text-slate-500 dark:text-zinc-400">
+                          {station.division.charAt(0) + station.division.slice(1).toLowerCase()} Division
                         </div>
                       </div>
                       {isSelected && (

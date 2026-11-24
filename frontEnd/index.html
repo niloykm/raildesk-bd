@@ -1,30 +1,30 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23059669' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='4' y='3' width='16' height='16' rx='2'/><path d='M4 11h16'/><path d='M12 3v8'/><path d='m8 19-2 3'/><path d='m18 22-2-3'/><circle cx='8' cy='15' r='1'/><circle cx='16' cy='15' r='1'/></svg>" />
     <link rel="manifest" href="/manifest.json" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
-    <meta name="theme-color" content="#09090b" />
-    <meta name="description" content="RailDesk BD - Bangladesh Railway Intercity Timetable, Route Stepper, Operating Day Checker, and Statutory Fare Calculator." />
-    <title>RailDesk BD | Bangladesh Railway Timetable, Route Stepper &amp; Fare Workstation</title>
+    <meta name="theme-color" content="#f8fafc" />
+    <meta name="description" content="RailDesk BD — Plan your Bangladesh Railway intercity train journey. Check train schedules, stops along the way, weekly off-days, and ticket fares." />
+    <title>RailDesk BD | Plan Your Bangladesh Railway Train Journey</title>
     <script>
       try {
-        var savedTheme = localStorage.getItem('raildesk-theme') || localStorage.getItem('nrl-theme');
-        if (savedTheme === 'light') {
-          document.documentElement.classList.remove('dark');
-        } else {
+        var savedTheme = localStorage.getItem('raildesk-theme-v2');
+        if (savedTheme === 'dark') {
           document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
         }
       } catch (e) {}
     </script>
   </head>
-  <body class="bg-slate-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 min-h-screen antialiased selection:bg-emerald-600 selection:text-white transition-colors duration-200">
+  <body class="bg-slate-50 text-slate-900 dark:bg-zinc-950 dark:text-zinc-100 min-h-screen antialiased selection:bg-emerald-600 selection:text-white transition-colors duration-200">
     <div id="root"></div>
     <noscript>
       <div style="padding:24px;font-family:system-ui,sans-serif;max-width:640px;margin:40px auto;border:1px solid #d4d4d8;border-radius:8px;">
-        <h1 style="font-size:18px;font-weight:700;margin:0 0 8px;">RailDesk BD — Bangladesh Railway Timetable Workstation</h1>
-        <p style="font-size:14px;margin:0;">JavaScript is required to run the interactive timetable, route stepper, and fare calculator. Please enable JavaScript and reload.</p>
+        <h1 style="font-size:18px;font-weight:700;margin:0 0 8px;">RailDesk BD — Plan Your Train Journey</h1>
+        <p style="font-size:14px;margin:0;">JavaScript is required to search train schedules, stops, and ticket fares. Please enable JavaScript and reload.</p>
       </div>
     </noscript>
     <script type="module" src="/src/main.tsx"></script>

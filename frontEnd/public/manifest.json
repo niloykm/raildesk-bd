@@ -1,6 +1,6 @@
 {
   "short_name": "RailDesk BD",
-  "name": "RailDesk BD — Bangladesh Railway Timetable & Fare Workstation",
+  "name": "RailDesk BD — Bangladesh Railway Travel Planner",
   "icons": [
     {
       "src": "favicon.png",
@@ -10,7 +10,7 @@
     }
   ],
   "start_url": "/",
-  "background_color": "#09090b",
+  "background_color": "#f8fafc",
   "theme_color": "#059669",
   "display": "standalone",
   "orientation": "portrait"
